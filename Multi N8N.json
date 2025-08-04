@@ -1,0 +1,405 @@
+{
+  "name": "Multi N8N",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f0993c5d-c686-4102-b949-bd29f263b26a",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1gWI1hbZp7mfC5o_0Dk365xCf8DXxiRjibO0LgCvQpSs",
+          "mode": "list",
+          "cachedResultName": "Research paper input",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gWI1hbZp7mfC5o_0Dk365xCf8DXxiRjibO0LgCvQpSs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gWI1hbZp7mfC5o_0Dk365xCf8DXxiRjibO0LgCvQpSs/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c8390ab6-bbf2-4880-928e-bccfefbfe25e",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "csbH9jlwOr99MYcS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e7d3e7ab-accb-4b01-8d5a-d8cb7c4ffbc2",
+              "name": "Topic ",
+              "value": "={{ $json['topic '] }}",
+              "type": "string"
+            },
+            {
+              "id": "1c98fb07-3d6a-4a5f-864e-b353fa2929c1",
+              "name": "max_papers",
+              "value": "5",
+              "type": "string"
+            },
+            {
+              "id": "6ee40ff2-1c8f-46c2-94c0-5a6fed40a528",
+              "name": "Status_row",
+              "value": "={{ $json.row_number }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "9da6935d-30d3-4009-983d-e0284cac5b0d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "https://export.arxiv.org/api/query",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "search_query",
+              "value": "=all:{{ $json['Topic '] }}"
+            },
+            {
+              "name": "=max_papers",
+              "value": "={{ $json.max_papers }}"
+            },
+            {
+              "name": "start",
+              "value": "0"
+            },
+            {
+              "name": "sortBy",
+              "value": "={{ 'relevance' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "4a4ac1bd-173b-42c8-9af0-3b6530af59b1",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "options": {
+          "attrkey": "$_attribute",
+          "charkey": "_text"
+        }
+      },
+      "type": "n8n-nodes-base.xml",
+      "typeVersion": 1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "5ab2f0e2-badd-49d3-b844-ab4827663623",
+      "name": "XML",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "feed.entry",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        0
+      ],
+      "id": "a3226d8d-31da-449e-9ece-56061f0234ac",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-1.5-flash-8b-latest",
+          "mode": "list",
+          "cachedResultName": "models/gemini-1.5-flash-8b-latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Please summarize this research paper:\n\n**Title:** {{ $json.title }}\n\n**Abstract:** {{ $json['Abstract '] }}\n\nCreate a summary that includes:\n1. **Main Goal:** What problem does this research solve?\n2. **Approach:** How did they tackle it?\n3. **Key Findings:** What did they discover?\n4. **Impact:** Why does this matter?\n\nKeep it under 150 words and make it accessible."
+            }
+          ]
+        },
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        0
+      ],
+      "id": "f8f90983-bdb9-4018-8935-80baef463396",
+      "name": "Generate Gemini Summary",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "StdzbL1qzC7EvKWN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "244e44ee-aafe-808f-8c74-e6d22593c693",
+          "mode": "list",
+          "cachedResultName": "Research Papers",
+          "cachedResultUrl": "https://www.notion.so/244e44eeaafe808f8c74e6d22593c693"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Summary|rich_text",
+              "textContent": "={{ $('Generate Gemini Summary').item.json.candidates[0].content.parts[0].text }}"
+            },
+            {
+              "key": "Title|title",
+              "title": "={{ $('Extract Paper Details').item.json.title }}"
+            },
+            {
+              "key": "Authors|rich_text",
+              "textContent": "={{ $('Extract Paper Details').item.json.authors }}"
+            },
+            {
+              "key": "ArXiv ID|rich_text",
+              "textContent": "={{ $('Extract Paper Details').item.json.arxiv_id }}"
+            },
+            {
+              "key": "PDF Link|url",
+              "urlValue": "={{ $('Extract Paper Details').item.json.pdf_link }}"
+            },
+            {
+              "key": "Published Date|date",
+              "date": "={{ $('Extract Paper Details').item.json.published_date.substring(0, 10) }}"
+            },
+            {
+              "key": "Added Date|date",
+              "date": "={{ $now.toFormat('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        1936,
+        0
+      ],
+      "id": "0efa1b4b-4c0d-44b1-8bff-542e533fd577",
+      "name": "Create a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "MVbTw620sBTJSRxS",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "213e4124-4563-44c5-af30-b36d6de4245d",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "d451cf2c-c131-4cb8-85b6-776d44250ab6",
+              "name": "authors",
+              "value": "={{ $json.author }}",
+              "type": "string"
+            },
+            {
+              "id": "f5c7854a-b619-46d2-be6f-4422297ec890",
+              "name": "arxiv_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "da64ee0f-9dfc-4096-9873-93468d8d9fb9",
+              "name": "pdf_link",
+              "value": "={{ $json.link.find(l => l.title === 'pdf').href }}",
+              "type": "string"
+            },
+            {
+              "id": "9a709444-2230-4343-973b-dbbb4849697c",
+              "name": "published_date",
+              "value": "={{ $json.published }}",
+              "type": "string"
+            },
+            {
+              "id": "d9721e7b-91fb-4a95-b0a8-f23df859128f",
+              "name": "Abstract ",
+              "value": "={{ $json.summary }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1360,
+        0
+      ],
+      "id": "70b98f1f-8791-4285-b053-efdb13487e8e",
+      "name": "Extract Paper Details"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "XML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XML": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Extract Paper Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Gemini Summary": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Paper Details": {
+      "main": [
+        [
+          {
+            "node": "Generate Gemini Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7022c56b-38d7-4576-b3d4-6841600e6f0b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "079ba27f28f78ea6daed7aaa04fe19efc34c1b8f171ba7e56426db239c057e65"
+  },
+  "id": "OPVBH9w7Z0uJHDGN",
+  "tags": []
+}
